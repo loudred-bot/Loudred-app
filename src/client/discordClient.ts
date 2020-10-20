@@ -21,6 +21,8 @@ import {
   createAudioDevice,
   createDeviceBroadcast,
 } from './deviceBroadcastStream';
+import fs from 'fs';
+import path from 'path'
 
 // utility functions for returning the correct data type
 function toVoiceChannelInfo(channel: VoiceChannel): VoiceChannelInfo {
@@ -119,6 +121,23 @@ async function initialize() {
           return;
         }
         await bot.join(channel);
+
+        /**
+         * If there isn't a broadcast stream created, play the
+         * "join" audio file. Otherwise, start playing the
+         * stream.
+         */
+        const joinStream = fs.createReadStream(
+          path.resolve(__dirname, '../../assets/join.webm')
+        );
+        if (broadcastStream) {
+          await bot.play(channel, broadcastStream)
+        } else {
+          await bot.play(channel, joinStream, {type: 'webm/opus'}, () => {
+            bot.silence(channel)
+          })
+        }
+
         messenger.send({
           type: 'clientSendActiveVoiceChannels',
           voiceChannels: bot.getActiveVoiceChannels().map(toVoiceChannelInfo),
